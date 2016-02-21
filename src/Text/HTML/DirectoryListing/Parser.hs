@@ -1,5 +1,9 @@
+module Parser
+where
 
+import Type
 
-parseUrl = undefined
+parseFileListing :: T.Text -> [Entry]
+parseFileListing = undefined
 
 
