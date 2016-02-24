@@ -7,15 +7,18 @@ import Text.HTML.DirectoryListing.Type
 import Text.HTML.TagSoup
 import Data.Time.LocalTime
 import Data.Time.Format
+import Data.List
+import Debug.Trace
 
 import qualified Data.Text as T
 
 parseFileListing :: T.Text -> [Entry]
 parseFileListing html = map toEntry itemTagLines
     where
-    hlines = T.lines html
+    hlines :: [[Tag T.Text]]
+    hlines = {-concatMap splitApache .-} map parseTags . T.lines $ html
     itemTagLines :: [[Tag T.Text]]
-    itemTagLines = filter isItemLine . map (filter (not . isNoise) . parseTags) $ hlines
+    itemTagLines = filter isItemLine . traceShowId . map (filter (not . isNoise)) $ hlines
     isItemLine :: [Tag T.Text] -> Bool
     isItemLine [(TagOpen oStr [("href", _)]), TagText _, (TagClose cStr), (TagText tms)] = 
         and [ oStr == "a"
@@ -27,7 +30,7 @@ parseFileListing html = map toEntry itemTagLines
     toEntry [(TagOpen _ [("href", ref)]), TagText name, (TagClose _), (TagText tms)] =
         Entry { name = name
               , href = ref
-              , lastModified = parseLastModified . T.concat . take 2 . T.words $ tms
+              , lastModified = parseLastModified . T.concat . intersperse " " . take 2 . T.words $ tms
               , fileSize = parseFileSize . last . T.words $ tms
               }
     toEntry _ = error "toEntry: not an item line"
@@ -38,7 +41,20 @@ parseFileListing html = map toEntry itemTagLines
     isNoise (TagOpen "td" _) = True
     isNoise (TagClose "td") = True
     isNoise (TagOpen "img" _) = True
+    isNoise (TagText "&nbsp;") = True
     isNoise _ = False
+
+    {- In fact, apache do break lines
+    -- | apache sometimes wont break line...
+    -- break for it (by </td></tr>)
+    splitApache :: [Tag T.Text] -> [[Tag T.Text]]
+    splitApache [] = []
+    splitApache [t] = [[t]]
+    splitApache (a@(TagClose "td"):b@(TagClose "tr"):xs) = [a, b]:splitApache xs
+    splitApache (x:xs) = case splitApache xs of
+                            [] -> [[x]]
+                            (lstx:lstxs) -> (x:lstx):lstxs
+    -}
     
 -- | Bad design, it throws error when noParse
 --   some example inputs:
