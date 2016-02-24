@@ -1,4 +1,4 @@
-module Type
+module Text.HTML.DirectoryListing.Type
 where
 
 import qualified Data.Text as T

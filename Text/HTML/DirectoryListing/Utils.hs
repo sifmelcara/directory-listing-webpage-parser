@@ -1,8 +1,8 @@
-module Utils
+module Text.HTML.DirectoryListing.Utils
 where
 
 import Network.URI (unEscapeString)
-import Type
+import Text.HTML.DirectoryListing.Type
 import Data.Ord
 import qualified Data.Text as T
 

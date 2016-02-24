@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Parser
+module Text.HTML.DirectoryListing.Parser
 where
 
-import Type
+import Text.HTML.DirectoryListing.Type
 import Text.HTML.TagSoup
 import Data.Time.LocalTime
 import Data.Time.Format
