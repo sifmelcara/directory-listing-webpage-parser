@@ -1,9 +1,9 @@
-module Text.HTML.DirectoryListing.Type
+module Text.HTML.DirectoryListing.Type 
 where
 
 import qualified Data.Text as T
 import Data.Time.Format
-import Data.Time.LocalTime
+import Data.Time.LocalTime (LocalTime)
 
 data Entry = Entry
     { name :: T.Text
@@ -13,4 +13,8 @@ data Entry = Entry
     -- ^ file size represented in bytes,
     -- Nothing if this Entry is a folder
     }
+    deriving Show
+
+
+
 

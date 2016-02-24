@@ -3,7 +3,7 @@
 module Text.HTML.DirectoryListing.Parser
 where
 
-import Text.HTML.DirectoryListing.Type
+import Text.HTML.DirectoryListing.Type 
 import Text.HTML.TagSoup
 import Data.Time.LocalTime
 import Data.Time.Format
@@ -15,7 +15,7 @@ parseFileListing html = map toEntry itemTagLines
     where
     hlines = T.lines html
     itemTagLines :: [[Tag T.Text]]
-    itemTagLines = filter isItemLine . map parseTags $ hlines
+    itemTagLines = filter isItemLine . map (filter (not . isNoise) . parseTags) $ hlines
     isItemLine :: [Tag T.Text] -> Bool
     isItemLine [(TagOpen oStr [("href", _)]), TagText _, (TagClose cStr), (TagText tms)] = 
         and [ oStr == "a"
@@ -31,6 +31,14 @@ parseFileListing html = map toEntry itemTagLines
               , fileSize = parseFileSize . last . T.words $ tms
               }
     toEntry _ = error "toEntry: not an item line"
+
+    -- | apache's directory listing have many noise, filter them out
+    isNoise (TagOpen "tr" _) = True
+    isNoise (TagClose "tr") = True
+    isNoise (TagOpen "td" _) = True
+    isNoise (TagClose "td") = True
+    isNoise (TagOpen "img" _) = True
+    isNoise _ = False
     
 -- | Bad design, it throws error when noParse
 --   some example inputs:
