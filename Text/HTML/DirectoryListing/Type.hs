@@ -4,17 +4,18 @@ where
 import qualified Data.Text as T
 import Data.Time.Format
 import Data.Time.LocalTime (LocalTime)
+import Network.URI (unEscapeString)
 
 data Entry = Entry
-    { name :: T.Text
+    { visibleName :: T.Text
     , href :: T.Text
     , lastModified :: LocalTime
     , fileSize :: Maybe Integer
     -- ^ file size represented in bytes,
-    -- Nothing if this Entry is a folder
+    -- this value is Nothing if this Entry is a folder
     }
     deriving Show
 
-
-
+decodedName :: Entry -> T.Text
+decodedName = T.pack . unEscapeString . T.unpack . href
 
