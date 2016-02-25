@@ -12,6 +12,7 @@ import Data.Maybe
 
 import qualified Data.Text as T
 
+-- | Parse a html file to Entrys
 parseDirectoryListing :: T.Text -> [Entry]
 parseDirectoryListing html = catMaybes fileLines
     where
