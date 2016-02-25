@@ -9,6 +9,7 @@ import Data.Time.LocalTime
 import Data.Time.Format
 import Data.List
 import Data.Maybe
+import Debug.Trace
 
 import qualified Data.Text as T
 
@@ -16,7 +17,7 @@ parseFileListing :: T.Text -> [Entry]
 parseFileListing html = catMaybes fileLines
     where
     fileLines :: [Maybe Entry]
-    fileLines = map (toEntry . filter (not . isNoise) . parseTags) . T.lines $ html
+    fileLines = map (toEntry {-. traceShowId-} . filter (not . isNoise) . parseTags) . T.lines $ html
     toEntry :: [Tag T.Text] -> Maybe Entry
     toEntry [(TagOpen "a" [("href", ref)]), TagText name, (TagClose "a"), (TagText dateTimeAndFilesize)] 
         | (length . T.words $ dateTimeAndFilesize) /= 3 = Nothing
@@ -38,7 +39,9 @@ parseFileListing html = catMaybes fileLines
     isNoise (TagOpen "td" _) = True
     isNoise (TagClose "td") = True
     isNoise (TagOpen "img" _) = True
-    isNoise (TagText "&nbsp;") = True
+    isNoise (TagText t) = t' `elem` ["&nbsp;", "\160", ""]
+        where
+        t' = T.strip t
     isNoise _ = False
     
 -- | Bad design, it throws error when noParse
