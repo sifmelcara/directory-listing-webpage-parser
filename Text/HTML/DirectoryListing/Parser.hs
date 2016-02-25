@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Text.HTML.DirectoryListing.Parser
+module Text.HTML.DirectoryListing.Parser (parseDirectoryListing)
 where
 
 import Text.HTML.DirectoryListing.Type 
@@ -9,28 +9,27 @@ import Data.Time.LocalTime
 import Data.Time.Format
 import Data.List
 import Data.Maybe
-import Debug.Trace
 
 import qualified Data.Text as T
 
-parseFileListing :: T.Text -> [Entry]
-parseFileListing html = catMaybes fileLines
+parseDirectoryListing :: T.Text -> [Entry]
+parseDirectoryListing html = catMaybes fileLines
     where
     fileLines :: [Maybe Entry]
-    fileLines = map (toEntry {-. traceShowId-} . filter (not . isNoise) . parseTags) . T.lines $ html
+    fileLines = map (toEntry . filter (not . isNoise) . parseTags) . T.lines $ html
     toEntry :: [Tag T.Text] -> Maybe Entry
-    toEntry [(TagOpen "a" [("href", ref)]), TagText name, (TagClose "a"), (TagText dateTimeAndFilesize)] 
+    toEntry [TagOpen "a" [("href", ref)], TagText name, TagClose "a", TagText dateTimeAndFilesize] 
         | (length . T.words $ dateTimeAndFilesize) /= 3 = Nothing
-        | otherwise = toEntry [(TagOpen "a" [("href", ref)]), TagText name, (TagClose "a"), (TagText dateTime), (TagText filesize)]
+        | otherwise = toEntry [TagOpen "a" [("href", ref)], TagText name, TagClose "a", TagText dateTime, TagText filesize]
         where
         dateTime = T.concat . intersperse " " . take 2 . T.words $ dateTimeAndFilesize
         filesize = last . T.words $ dateTimeAndFilesize
-    toEntry [(TagOpen "a" [("href", ref)]), TagText name, (TagClose "a"), (TagText dateTime), (TagText filesize)] = 
-        Just $ Entry { visibleName = name
-                     , href = ref
-                     , lastModified = parseLastModified dateTime
-                     , fileSize = parseFileSize filesize
-                     }
+    toEntry [TagOpen "a" [("href", ref)], TagText name, TagClose "a", TagText dateTime, TagText filesize] = 
+        Just Entry { visibleName = name
+                   , href = ref
+                   , lastModified = parseLastModified dateTime
+                   , fileSize = parseFileSize filesize
+                   }
     toEntry _ = Nothing
 
     -- | apache's directory listing have many noise, filter them out
@@ -53,7 +52,7 @@ parseLastModified t = parseTimeOrError True locale format (T.unpack t)
     where
     format = "%d-%b-%Y %R"
     locale = defaultTimeLocale
-        { months = map (\y -> (y, y)) $
+        { months = map (\y -> (y, y))
                     [ "Jan", "Feb", "Mar", "Apr"
                     , "May", "Jun", "Jul", "Aug"
                     , "Sep", "Oct", "Nov", "Dec"

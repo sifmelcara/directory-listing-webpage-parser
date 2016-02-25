@@ -2,7 +2,6 @@ module Text.HTML.DirectoryListing.Type
 where
 
 import qualified Data.Text as T
-import Data.Time.Format
 import Data.Time.LocalTime (LocalTime)
 import Network.URI (unEscapeString)
 
