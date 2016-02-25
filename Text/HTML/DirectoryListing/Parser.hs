@@ -8,32 +8,29 @@ import Text.HTML.TagSoup
 import Data.Time.LocalTime
 import Data.Time.Format
 import Data.List
-import Debug.Trace
+import Data.Maybe
 
 import qualified Data.Text as T
 
 parseFileListing :: T.Text -> [Entry]
-parseFileListing html = map toEntry itemTagLines
+parseFileListing html = catMaybes fileLines
     where
-    hlines :: [[Tag T.Text]]
-    hlines = {-concatMap splitApache .-} map parseTags . T.lines $ html
-    itemTagLines :: [[Tag T.Text]]
-    itemTagLines = filter isItemLine . traceShowId . map (filter (not . isNoise)) $ hlines
-    isItemLine :: [Tag T.Text] -> Bool
-    isItemLine [(TagOpen oStr [("href", _)]), TagText _, (TagClose cStr), (TagText tms)] = 
-        and [ oStr == "a"
-            , cStr == "a"
-            , (length . T.words $ tms) == 3 -- date hhmm filesize
-            ]
-    isItemLine _ = False
-    toEntry :: [Tag T.Text] -> Entry
-    toEntry [(TagOpen _ [("href", ref)]), TagText name, (TagClose _), (TagText tms)] =
-        Entry { name = name
-              , href = ref
-              , lastModified = parseLastModified . T.concat . intersperse " " . take 2 . T.words $ tms
-              , fileSize = parseFileSize . last . T.words $ tms
-              }
-    toEntry _ = error "toEntry: not an item line"
+    fileLines :: [Maybe Entry]
+    fileLines = map (toEntry . filter (not . isNoise) . parseTags) . T.lines $ html
+    toEntry :: [Tag T.Text] -> Maybe Entry
+    toEntry [(TagOpen "a" [("href", ref)]), TagText name, (TagClose "a"), (TagText dateTimeAndFilesize)] 
+        | (length . T.words $ dateTimeAndFilesize) /= 3 = Nothing
+        | otherwise = toEntry [(TagOpen "a" [("href", ref)]), TagText name, (TagClose "a"), (TagText dateTime), (TagText filesize)]
+        where
+        dateTime = T.concat . intersperse " " . take 2 . T.words $ dateTimeAndFilesize
+        filesize = last . T.words $ dateTimeAndFilesize
+    toEntry [(TagOpen "a" [("href", ref)]), TagText name, (TagClose "a"), (TagText dateTime), (TagText filesize)] = 
+        Just $ Entry { name = name
+                     , href = ref
+                     , lastModified = parseLastModified dateTime
+                     , fileSize = parseFileSize filesize
+                     }
+    toEntry _ = Nothing
 
     -- | apache's directory listing have many noise, filter them out
     isNoise (TagOpen "tr" _) = True
@@ -43,18 +40,6 @@ parseFileListing html = map toEntry itemTagLines
     isNoise (TagOpen "img" _) = True
     isNoise (TagText "&nbsp;") = True
     isNoise _ = False
-
-    {- In fact, apache do break lines
-    -- | apache sometimes wont break line...
-    -- break for it (by </td></tr>)
-    splitApache :: [Tag T.Text] -> [[Tag T.Text]]
-    splitApache [] = []
-    splitApache [t] = [[t]]
-    splitApache (a@(TagClose "td"):b@(TagClose "tr"):xs) = [a, b]:splitApache xs
-    splitApache (x:xs) = case splitApache xs of
-                            [] -> [[x]]
-                            (lstx:lstxs) -> (x:lstx):lstxs
-    -}
     
 -- | Bad design, it throws error when noParse
 --   some example inputs:
